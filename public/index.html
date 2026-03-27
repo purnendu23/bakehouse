@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bakehouse — Fresh Baked, Delivered</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🍞 Bakehouse</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products.html">Products</a></li>
+                <li><a href="/cart.html" class="cart-link">Cart <span id="cart-count" class="badge">0</span></a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Fresh From the Oven,<br>Straight to Your Door</h1>
+                <p>Artisan breads, handcrafted cakes, buttery pastries, and more — baked with love and delivered fresh.</p>
+                <a href="/products.html" class="btn btn-primary btn-lg">Shop Now</a>
+            </div>
+        </section>
+
+        <!-- Featured Products -->
+        <section class="section">
+            <div class="container">
+                <h2 class="section-title">Featured Products</h2>
+                <div id="featured-products" class="product-grid">
+                    <!-- Filled by JS -->
+                </div>
+                <div class="text-center" style="margin-top: 2rem;">
+                    <a href="/products.html" class="btn btn-outline">View All Products</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Categories -->
+        <section class="section section-alt">
+            <div class="container">
+                <h2 class="section-title">Shop by Category</h2>
+                <div id="categories" class="category-grid">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- About -->
+        <section class="section">
+            <div class="container text-center">
+                <h2 class="section-title">Why Bakehouse?</h2>
+                <div class="features">
+                    <div class="feature">
+                        <div class="feature-icon">🌾</div>
+                        <h3>Premium Ingredients</h3>
+                        <p>We source the finest flours, butters, and natural ingredients for every recipe.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">👨‍🍳</div>
+                        <h3>Baked Fresh Daily</h3>
+                        <p>Every item is baked fresh the day it ships — never frozen, never stale.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🚚</div>
+                        <h3>Fast Delivery</h3>
+                        <p>Order by noon and get your baked goods delivered the very next day.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Bakehouse. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/cart.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
