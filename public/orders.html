@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders — Bakehouse</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .orders-list { max-width: 800px; }
+
+        .order-card {
+            background: var(--color-white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            background: var(--color-bg-alt);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .order-header-left {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: var(--color-text-light);
+        }
+
+        .order-header-left strong {
+            color: var(--color-text);
+        }
+
+        .order-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-ready-to-ship { background: #cce5ff; color: #004085; }
+        .status-confirmed { background: #d1ecf1; color: #0c5460; }
+        .status-shipped { background: #cce5ff; color: #004085; }
+        .status-delivered { background: #d4edda; color: #155724; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+
+        .order-items {
+            padding: 1rem 1.5rem;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .order-item + .order-item {
+            border-top: 1px solid var(--color-border);
+        }
+
+        .order-item-name {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .order-item-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: var(--color-bg-alt);
+        }
+
+        .order-item-qty {
+            color: var(--color-text-light);
+            font-size: 0.85rem;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-top: 1px solid var(--color-border);
+            font-size: 0.9rem;
+        }
+
+        .order-footer .order-total {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-primary-dark);
+        }
+
+        .order-tracking {
+            font-size: 0.85rem;
+            color: var(--color-text-light);
+        }
+
+        .order-tracking a {
+            font-weight: 600;
+        }
+
+        .orders-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--color-text-light);
+        }
+
+        .orders-empty p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .orders-login {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--color-text-light);
+        }
+
+        .orders-login p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo"><img src="/images/logo/bakehouse_logo.jpg" alt="Bakehouse"></a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products.html">Products</a></li>
+                <li><a href="/cart.html" class="cart-link">Cart <span id="cart-count" class="badge">0</span></a></li>
+                <li><a href="/orders.html" class="active">Orders</a></li>
+                <li id="auth-nav"></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="container">
+                <h1 class="page-title">My Orders</h1>
+                <div id="orders-content" class="orders-list">
+                    <p style="color: var(--color-text-light);">Loading orders…</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Bakehouse. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/cart.js"></script>
+    <script src="/js/auth-nav.js"></script>
+    <script>
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function statusClass(status) {
+            const s = (status || 'pending').toLowerCase();
+            const map = { pending: 'status-pending', ready_to_ship: 'status-ready-to-ship', confirmed: 'status-confirmed', shipped: 'status-shipped', delivered: 'status-delivered', cancelled: 'status-cancelled' };
+            return map[s] || 'status-pending';
+        }
+
+        function statusLabel(status) {
+            const map = { pending: 'Pending', ready_to_ship: 'Ready to Ship', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled' };
+            return map[status] || status;
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function getFirstImage(imageUrl) {
+            if (!imageUrl) return '';
+            try {
+                const images = JSON.parse(imageUrl);
+                return Array.isArray(images) ? images[0] : imageUrl;
+            } catch {
+                return imageUrl;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const content = document.getElementById('orders-content');
+
+            try {
+                const res = await fetch('/api/orders/my');
+
+                if (res.status === 401) {
+                    content.innerHTML = `
+                        <div class="orders-login">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+                            <p>Please log in to view your orders.</p>
+                            <a href="/login.html" class="btn btn-primary">Log In</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const data = await res.json();
+
+                if (!data.orders || data.orders.length === 0) {
+                    content.innerHTML = `
+                        <div class="orders-empty">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+                            <p>You haven't placed any orders yet.</p>
+                            <a href="/products.html" class="btn btn-primary">Start Shopping</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                content.innerHTML = data.orders.map(order => `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div class="order-header-left">
+                                <div><strong>Order #${order.id}</strong></div>
+                                <div>Placed ${formatDate(order.created_at)}</div>
+                            </div>
+                            <span class="order-status ${statusClass(order.status)}">${escapeHTML(statusLabel(order.status))}</span>
+                        </div>
+                        <div class="order-items">
+                            ${order.items.map(item => `
+                                <div class="order-item">
+                                    <div class="order-item-name">
+                                        ${getFirstImage(item.image_url) ? `<img src="${getFirstImage(item.image_url)}" alt="" class="order-item-thumb">` : ''}
+                                        <div>
+                                            <div>${escapeHTML(item.product_name)}</div>
+                                            <div class="order-item-qty">&times; ${item.quantity} @ $${item.unit_price.toFixed(2)}</div>
+                                        </div>
+                                    </div>
+                                    <div>$${(item.quantity * item.unit_price).toFixed(2)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="order-footer">
+                            <div>
+                                ${order.tracking_number ? `
+                                    <span class="order-tracking">
+                                        📦 Tracking: <strong>${escapeHTML(order.tracking_number)}</strong>
+                                        ${order.carrier ? ` (${escapeHTML(order.carrier)})` : ''}
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <div class="order-total">$${order.total.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Failed to load orders:', err);
+                content.innerHTML = '<p style="color: var(--color-error);">Failed to load orders. Please try again.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
+

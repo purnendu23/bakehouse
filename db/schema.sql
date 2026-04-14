@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS products (
     category_id INTEGER,
     stock INTEGER NOT NULL DEFAULT 0,
     featured INTEGER NOT NULL DEFAULT 0,
+    ingredients TEXT,
+    nutritional_info TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
@@ -30,6 +32,10 @@ CREATE TABLE IF NOT EXISTS orders (
     shipping_zip TEXT NOT NULL,
     total REAL NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
+    payment_method TEXT,
+    payment_id TEXT,
+    tracking_number TEXT,
+    carrier TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -42,4 +48,34 @@ CREATE TABLE IF NOT EXISTS order_items (
     unit_price REAL NOT NULL,
     FOREIGN KEY (order_id) REFERENCES orders(id),
     FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Users
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT,
+    name TEXT,
+    provider TEXT NOT NULL DEFAULT 'local',
+    provider_id TEXT,
+    verified INTEGER NOT NULL DEFAULT 0,
+    verification_token TEXT,
+    reset_token TEXT,
+    reset_token_expires TEXT,
+    is_admin INTEGER NOT NULL DEFAULT 0,
+    phone TEXT,
+    organization TEXT,
+    shipping_address TEXT,
+    shipping_address2 TEXT,
+    shipping_city TEXT,
+    shipping_state TEXT,
+    shipping_zip TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Sessions
+CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    sess TEXT NOT NULL,
+    expired_at TEXT NOT NULL
 );

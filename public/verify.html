@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification — Bakehouse</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-centered">
+            <a href="/" class="logo"><img src="/images/logo/bakehouse_logo.jpg" alt="Bakehouse"></a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products.html">Products</a></li>
+                <li><a href="/cart.html" class="cart-link">Cart <span id="cart-count" class="badge">0</span></a></li>
+                <li id="auth-nav"></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="container">
+                <div class="auth-container" style="text-align: center;">
+                    <div id="verify-content"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Bakehouse. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/cart.js"></script>
+    <script src="/js/auth-nav.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const status = params.get('status');
+        const message = params.get('message');
+        const content = document.getElementById('verify-content');
+
+        if (status === 'success') {
+            content.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                <h2 class="auth-title">Email Verified!</h2>
+                <p style="color: var(--color-text-light); margin: 1rem 0;">Your account has been verified. You can now log in.</p>
+                <a href="/login.html" class="btn btn-primary">Log In</a>
+            `;
+        } else if (status === 'already') {
+            content.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 1rem;">ℹ️</div>
+                <h2 class="auth-title">Already Verified</h2>
+                <p style="color: var(--color-text-light); margin: 1rem 0;">Your account is already verified.</p>
+                <a href="/login.html" class="btn btn-primary">Log In</a>
+            `;
+        } else {
+            content.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+                <h2 class="auth-title">Verification Failed</h2>
+                <p style="color: var(--color-text-light); margin: 1rem 0;">${message || 'The verification link is invalid or has expired.'}</p>
+                <a href="/register.html" class="btn btn-outline">Try Again</a>
+            `;
+        }
+    </script>
+</body>
+</html>

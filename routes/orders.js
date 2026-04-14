@@ -4,7 +4,7 @@ const router = express.Router();
 // POST /api/orders — place a new order
 router.post('/', (req, res) => {
     const db = req.app.locals.db;
-    const { customer_name, customer_email, customer_phone, shipping_address, shipping_city, shipping_zip, items } = req.body;
+    const { customer_name, customer_email, customer_phone, shipping_address, shipping_city, shipping_zip, items, payment_method, payment_id } = req.body;
 
     // Validate required fields
     if (!customer_name || !customer_email || !shipping_address || !shipping_city || !shipping_zip) {
@@ -21,8 +21,8 @@ router.post('/', (req, res) => {
 
     const getProduct = db.prepare('SELECT id, price, stock FROM products WHERE id = ?');
     const insertOrder = db.prepare(
-        `INSERT INTO orders (customer_name, customer_email, customer_phone, shipping_address, shipping_city, shipping_zip, total)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO orders (customer_name, customer_email, customer_phone, shipping_address, shipping_city, shipping_zip, total, payment_method, payment_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const insertItem = db.prepare(
         'INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)'
@@ -51,7 +51,8 @@ router.post('/', (req, res) => {
         const result = insertOrder.run(
             customer_name, customer_email, customer_phone || null,
             shipping_address, shipping_city, shipping_zip,
-            Math.round(total * 100) / 100
+            Math.round(total * 100) / 100,
+            payment_method || null, payment_id || null
         );
         const orderId = result.lastInsertRowid;
 
@@ -69,6 +70,35 @@ router.post('/', (req, res) => {
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
+});
+
+// GET /api/orders/my — get orders for the logged-in user
+router.get('/my', (req, res) => {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Not logged in.' });
+    }
+
+    const db = req.app.locals.db;
+    const email = req.user.email;
+
+    const orders = db.prepare(
+        'SELECT * FROM orders WHERE customer_email = ? ORDER BY created_at DESC'
+    ).all(email);
+
+    // Attach items to each order
+    const getItems = db.prepare(
+        `SELECT oi.*, p.name AS product_name, p.image_url
+         FROM order_items oi
+         JOIN products p ON oi.product_id = p.id
+         WHERE oi.order_id = ?`
+    );
+
+    const result = orders.map(order => ({
+        ...order,
+        items: getItems.all(order.id),
+    }));
+
+    res.json({ orders: result });
 });
 
 // GET /api/orders/:id — get order details

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile — Bakehouse</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-centered">
+            <a href="/" class="logo"><img src="/images/logo/bakehouse_logo.jpg" alt="Bakehouse"></a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products.html">Products</a></li>
+                <li><a href="/cart.html" class="cart-link">Cart <span id="cart-count" class="badge">0</span></a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="container">
+                <div class="checkout-form" style="margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <div style="font-size: 3rem; margin-bottom: 0.5rem;">✅</div>
+                        <h2 class="auth-title">Email Verified!</h2>
+                        <p style="color: var(--color-text-light); margin-top: 0.5rem;">
+                            Complete your profile so we can ship orders to you faster.
+                        </p>
+                    </div>
+
+                    <div id="profile-error" class="error-msg" style="display:none;"></div>
+
+                    <form id="profile-form">
+                        <h2>Shipping Information</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="profile-name">Full Name *</label>
+                                <input type="text" id="profile-name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-phone">Phone</label>
+                                <input type="tel" id="profile-phone" name="phone" placeholder="(optional)">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-organization">Organization</label>
+                            <input type="text" id="profile-organization" name="organization" placeholder="Company or organization (optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-address">Address *</label>
+                            <input type="text" id="profile-address" name="shipping_address" required placeholder="Street address, P.O. box">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-address2">Address Line 2</label>
+                            <input type="text" id="profile-address2" name="shipping_address2" placeholder="Apt, suite, unit, floor (optional)">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="profile-city">City *</label>
+                                <input type="text" id="profile-city" name="shipping_city" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-state">State *</label>
+                                <select id="profile-state" name="shipping_state" required>
+                                    <option value="">Select state</option>
+                                    <option value="NY">New York</option>
+                                    <option value="NJ">New Jersey</option>
+                                    <option value="CT">Connecticut</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-zip">ZIP Code *</label>
+                                <input type="text" id="profile-zip" name="shipping_zip" required>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                            <a href="/" class="btn btn-outline" style="text-align: center;">Skip for Now</a>
+                            <button type="submit" class="btn btn-primary btn-lg" style="flex: 1;">Save Profile</button>
+                        </div>
+                    </form>
+
+                    <!-- Success state (hidden initially) -->
+                    <div id="profile-success" style="display:none; text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
+                        <h2 class="auth-title">You're All Set!</h2>
+                        <p style="color: var(--color-text-light); margin: 1rem 0;">
+                            Your profile has been saved. You're ready to start shopping!
+                        </p>
+                        <a href="/products.html" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Bakehouse. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/cart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const form = document.getElementById('profile-form');
+            const errorDiv = document.getElementById('profile-error');
+            const successDiv = document.getElementById('profile-success');
+
+            // Pre-fill name from the user's account if available
+            try {
+                const res = await fetch('/api/auth/profile');
+                if (res.ok) {
+                    const { profile } = await res.json();
+                    if (profile.name) document.getElementById('profile-name').value = profile.name;
+                    if (profile.phone) document.getElementById('profile-phone').value = profile.phone;
+                    if (profile.organization) document.getElementById('profile-organization').value = profile.organization;
+                    if (profile.shipping_address) document.getElementById('profile-address').value = profile.shipping_address;
+                    if (profile.shipping_address2) document.getElementById('profile-address2').value = profile.shipping_address2;
+                    if (profile.shipping_city) document.getElementById('profile-city').value = profile.shipping_city;
+                    if (profile.shipping_state) document.getElementById('profile-state').value = profile.shipping_state;
+                    if (profile.shipping_zip) document.getElementById('profile-zip').value = profile.shipping_zip;
+                } else {
+                    // Not logged in — redirect to login
+                    window.location.href = '/login.html';
+                    return;
+                }
+            } catch (e) {
+                // Ignore — user can still fill the form manually
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorDiv.style.display = 'none';
+
+                const name = document.getElementById('profile-name').value.trim();
+                const address = document.getElementById('profile-address').value.trim();
+                const city = document.getElementById('profile-city').value.trim();
+                const state = document.getElementById('profile-state').value;
+                const zip = document.getElementById('profile-zip').value.trim();
+
+                if (!name || !address || !city || !state || !zip) {
+                    errorDiv.textContent = 'Please fill in all required fields.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/auth/profile', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name,
+                            phone: document.getElementById('profile-phone').value.trim(),
+                            organization: document.getElementById('profile-organization').value.trim(),
+                            shipping_address: address,
+                            shipping_address2: document.getElementById('profile-address2').value.trim(),
+                            shipping_city: city,
+                            shipping_state: state,
+                            shipping_zip: zip,
+                        }),
+                    });
+                    const data = await res.json();
+
+                    if (!res.ok) {
+                        errorDiv.textContent = data.error || 'Failed to save profile.';
+                        errorDiv.style.display = 'block';
+                        return;
+                    }
+
+                    // Show success
+                    form.style.display = 'none';
+                    document.querySelector('.checkout-form > div:first-child').style.display = 'none';
+                    successDiv.style.display = 'block';
+                } catch (err) {
+                    errorDiv.textContent = 'Something went wrong. Please try again.';
+                    errorDiv.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

@@ -16,6 +16,10 @@ router.get('/', (req, res) => {
         sql += ' AND p.category_id = ?';
         params.push(category);
     }
+    if (req.query.category_name) {
+        sql += ' AND c.name = ?';
+        params.push(req.query.category_name);
+    }
     if (featured === '1') {
         sql += ' AND p.featured = 1';
     }

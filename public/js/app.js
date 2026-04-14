@@ -1,13 +1,23 @@
 /* Homepage — featured products & categories */
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load featured products
+    // Load Healthy Bars
     try {
-        const res = await fetch('/api/products?featured=1');
+        const res = await fetch('/api/products?category_name=Healthy Bars');
         const products = await res.json();
-        const container = document.getElementById('featured-products');
-        container.innerHTML = products.map(productCardHTML).join('');
+        const container = document.getElementById('healthy-bars-products');
+        if (container) container.innerHTML = products.map(productCardHTML).join('');
     } catch (err) {
-        console.error('Failed to load featured products:', err);
+        console.error('Failed to load Healthy Bars:', err);
+    }
+
+    // Load Coffee Cakes
+    try {
+        const res = await fetch('/api/products?category_name=Coffee Cakes');
+        const products = await res.json();
+        const container = document.getElementById('coffee-cakes-products');
+        if (container) container.innerHTML = products.map(productCardHTML).join('');
+    } catch (err) {
+        console.error('Failed to load Coffee Cakes:', err);
     }
 
     // Load categories
@@ -27,9 +37,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function productCardHTML(product) {
+    let images = [];
+    try { images = JSON.parse(product.image_url); } catch (e) { images = [product.image_url]; }
+    const cardId = 'card-' + product.id;
     return `
         <div class="product-card">
-            <div class="product-card-img">🧁</div>
+            <div class="product-card-img">
+                <div class="carousel-img-wrap">
+                    <img id="${cardId}" src="${escapeHTML(images[0])}" alt="${escapeHTML(product.name)}" data-images='${JSON.stringify(images)}' data-index="0">
+                </div>
+                <div class="carousel-controls">
+                    <button class="carousel-arrow" onclick="cardCarousel('${cardId}', -1)">&#8249;</button>
+                    <button class="carousel-arrow" onclick="cardCarousel('${cardId}', 1)">&#8250;</button>
+                </div>
+            </div>
             <div class="product-card-body">
                 <div class="product-card-category">${escapeHTML(product.category_name || '')}</div>
                 <h3><a href="/product.html?id=${product.id}">${escapeHTML(product.name)}</a></h3>
@@ -41,6 +62,15 @@ function productCardHTML(product) {
             </div>
         </div>
     `;
+}
+
+function cardCarousel(imgId, direction) {
+    const img = document.getElementById(imgId);
+    const images = JSON.parse(img.dataset.images);
+    let index = parseInt(img.dataset.index, 10);
+    index = (index + direction + images.length) % images.length;
+    img.src = images[index];
+    img.dataset.index = index;
 }
 
 function addToCart(id, name, price) {
@@ -79,6 +109,7 @@ function escapeAttr(str) {
 
 // Make addToCart globally available
 window.addToCart = addToCart;
+window.cardCarousel = cardCarousel;
 window.productCardHTML = productCardHTML;
 window.escapeHTML = escapeHTML;
 window.escapeAttr = escapeAttr;

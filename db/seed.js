@@ -10,16 +10,43 @@ db.pragma('foreign_keys = ON');
 
 // Run schema
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+
+// Preserve admin users before dropping tables
+const adminUsers = [];
+try {
+    const admins = db.prepare('SELECT * FROM users WHERE is_admin = 1').all();
+    adminUsers.push(...admins);
+} catch (e) {
+    // users table may not exist yet
+}
+
+// Drop existing tables and recreate
+db.exec(`
+    DROP TABLE IF EXISTS order_items;
+    DROP TABLE IF EXISTS orders;
+    DROP TABLE IF EXISTS products;
+    DROP TABLE IF EXISTS categories;
+    DROP TABLE IF EXISTS sessions;
+    DROP TABLE IF EXISTS users;
+`);
 db.exec(schema);
+
+// Restore admin users
+if (adminUsers.length > 0) {
+    const restoreUser = db.prepare(
+        'INSERT INTO users (id, email, password_hash, name, provider, provider_id, verified, verification_token, reset_token, reset_token_expires, is_admin, phone, organization, shipping_address, shipping_address2, shipping_city, shipping_state, shipping_zip, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    for (const u of adminUsers) {
+        restoreUser.run(u.id, u.email, u.password_hash, u.name, u.provider, u.provider_id, u.verified, u.verification_token, u.reset_token || null, u.reset_token_expires || null, u.is_admin, u.phone, u.organization, u.shipping_address, u.shipping_address2, u.shipping_city, u.shipping_state, u.shipping_zip, u.created_at);
+    }
+    console.log(`  - ${adminUsers.length} admin user(s) preserved`);
+}
 
 // Seed categories
 const insertCategory = db.prepare('INSERT OR IGNORE INTO categories (name, description) VALUES (?, ?)');
 const categories = [
-    ['Breads', 'Freshly baked artisan breads'],
-    ['Cakes', 'Handcrafted cakes for every occasion'],
-    ['Pastries', 'Flaky, buttery pastries made daily'],
-    ['Cookies', 'Classic and creative cookie varieties'],
-    ['Pies & Tarts', 'Sweet and savory pies and tarts'],
+    ['Healthy Bars', 'Wholesome, nutritious bars baked with natural ingredients'],
+    ['Coffee Cakes', 'Tender coffee cakes perfect with your morning brew'],
 ];
 for (const [name, desc] of categories) {
     insertCategory.run(name, desc);
@@ -27,44 +54,23 @@ for (const [name, desc] of categories) {
 
 // Seed products
 const insertProduct = db.prepare(
-    'INSERT OR IGNORE INTO products (name, description, price, image_url, category_id, stock, featured) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    'INSERT OR IGNORE INTO products (name, description, price, image_url, category_id, stock, featured, ingredients, nutritional_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 
 const products = [
-    // Breads (category 1)
-    ['Sourdough Loaf', 'Traditional sourdough with a crispy crust and tangy flavor.', 8.50, '/images/sourdough.jpg', 1, 30, 1],
-    ['Whole Wheat Bread', 'Hearty whole wheat bread, perfect for sandwiches.', 6.00, '/images/wholewheat.jpg', 1, 40, 0],
-    ['Baguette', 'Classic French baguette with a golden crust.', 4.50, '/images/baguette.jpg', 1, 50, 1],
-    ['Ciabatta', 'Italian ciabatta with an airy, open crumb.', 5.50, '/images/ciabatta.jpg', 1, 25, 0],
-    ['Rye Bread', 'Dense, flavorful rye bread with caraway seeds.', 7.00, '/images/rye.jpg', 1, 20, 0],
+    
+    // Healthy Bars (category 1)
+    ['Golden Pista', 'A premium pistachio bar crafted with wholesome natural ingredients.', 4.50, JSON.stringify(['/images/golden-pista/front_picture.jpg', '/images/golden-pista/nakpic_1.jpg', '/images/golden-pista/nakpic_2.jpg', '/images/golden-pista/ingredients_picture.jpg']), 1, 50, 1,
+        'Pistachios, Dates, Oats, Honey, Coconut Oil, Cardamom, Sea Salt',
+        'Serving Size: 1 bar (40g)\nCalories: 180\nTotal Fat: 9g\nSaturated Fat: 3g\nCholesterol: 0mg\nSodium: 45mg\nTotal Carbohydrates: 22g\nDietary Fiber: 3g\nTotal Sugars: 12g\nProtein: 5g'],
+    ['EnergyBite', 'A power-packed energy bar to fuel your day.', 3.0, JSON.stringify(['/images/energybite/front_picture.jpg', '/images/energybite/nakpic_1.jpg', '/images/energybite/nakpic_2.jpg', '/images/energybite/ingredients_picture.jpg']), 1, 60, 1,
+        'Rolled Oats, Peanut Butter, Dark Chocolate Chips, Honey, Chia Seeds, Flaxseed, Vanilla Extract',
+        'Serving Size: 1 bar (35g)\nCalories: 160\nTotal Fat: 7g\nSaturated Fat: 2g\nCholesterol: 0mg\nSodium: 35mg\nTotal Carbohydrates: 20g\nDietary Fiber: 4g\nTotal Sugars: 9g\nProtein: 6g'],
 
-    // Cakes (category 2)
-    ['Chocolate Fudge Cake', 'Rich, indulgent chocolate cake layered with fudge frosting.', 32.00, '/images/chocfudge.jpg', 2, 10, 1],
-    ['Vanilla Sponge Cake', 'Light and fluffy vanilla sponge with buttercream.', 28.00, '/images/vanillasponge.jpg', 2, 12, 0],
-    ['Red Velvet Cake', 'Classic red velvet with cream cheese frosting.', 35.00, '/images/redvelvet.jpg', 2, 8, 1],
-    ['Carrot Cake', 'Moist carrot cake loaded with walnuts and spices.', 30.00, '/images/carrotcake.jpg', 2, 10, 0],
-    ['Lemon Drizzle Cake', 'Zesty lemon cake with a sweet glaze.', 26.00, '/images/lemondrizzle.jpg', 2, 15, 0],
-
-    // Pastries (category 3)
-    ['Butter Croissant', 'Flaky, golden croissant made with pure butter.', 3.50, '/images/croissant.jpg', 3, 60, 1],
-    ['Pain au Chocolat', 'Chocolate-filled croissant pastry.', 4.00, '/images/painauchocolat.jpg', 3, 50, 0],
-    ['Danish Pastry', 'Fruit-topped danish with a sweet glaze.', 4.50, '/images/danish.jpg', 3, 35, 0],
-    ['Cinnamon Roll', 'Soft, gooey cinnamon roll with cream cheese icing.', 5.00, '/images/cinnamonroll.jpg', 3, 40, 1],
-    ['Almond Croissant', 'Croissant filled with almond frangipane.', 4.50, '/images/almondcroissant.jpg', 3, 30, 0],
-
-    // Cookies (category 4)
-    ['Chocolate Chip Cookie', 'Classic cookie loaded with chocolate chips.', 2.50, '/images/chocchip.jpg', 4, 100, 1],
-    ['Oatmeal Raisin Cookie', 'Chewy oatmeal cookie with plump raisins.', 2.50, '/images/oatmealraisin.jpg', 4, 80, 0],
-    ['Peanut Butter Cookie', 'Rich peanut butter cookies with a crumbly texture.', 2.50, '/images/peanutbutter.jpg', 4, 70, 0],
-    ['Snickerdoodle', 'Soft sugar cookie coated in cinnamon sugar.', 2.50, '/images/snickerdoodle.jpg', 4, 90, 0],
-    ['Double Chocolate Cookie', 'Dark chocolate cookie with white chocolate chunks.', 3.00, '/images/doublechoc.jpg', 4, 60, 1],
-
-    // Pies & Tarts (category 5)
-    ['Apple Pie', 'Classic apple pie with a buttery, flaky crust.', 22.00, '/images/applepie.jpg', 5, 12, 1],
-    ['Blueberry Tart', 'Fresh blueberry tart with a shortcrust base.', 20.00, '/images/blueberrytart.jpg', 5, 10, 0],
-    ['Pecan Pie', 'Sweet, nutty pecan pie with a caramel filling.', 24.00, '/images/pecanpie.jpg', 5, 8, 0],
-    ['Lemon Meringue Pie', 'Tangy lemon curd topped with fluffy meringue.', 23.00, '/images/lemonmeringue.jpg', 5, 10, 1],
-    ['Strawberry Tart', 'Fresh strawberry tart with pastry cream.', 21.00, '/images/strawberrytart.jpg', 5, 10, 0],
+    // Coffee Cakes (category 2)
+    ['Orange Kiss Almond Cake', 'A delightful almond cake with a hint of fresh orange zest.', 22.00, JSON.stringify(['/images/orange-kiss-almond-cake/front_picture.jpg', '/images/orange-kiss-almond-cake/nakpic_1.jpg', '/images/orange-kiss-almond-cake/nakpic_2.jpg', '/images/orange-kiss-almond-cake/ingredients_picture.jpg']), 2, 15, 1,
+        'Almond Flour, Butter, Sugar, Eggs, Fresh Orange Zest, Orange Juice, Vanilla Extract, Baking Powder, Sea Salt',
+        'Serving Size: 1 slice (85g)\nCalories: 280\nTotal Fat: 16g\nSaturated Fat: 6g\nCholesterol: 55mg\nSodium: 120mg\nTotal Carbohydrates: 30g\nDietary Fiber: 2g\nTotal Sugars: 18g\nProtein: 6g'],
 ];
 
 for (const p of products) {

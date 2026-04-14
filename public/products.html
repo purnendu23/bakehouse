@@ -9,11 +9,12 @@
 <body>
     <header>
         <nav class="navbar">
-            <a href="/" class="logo">🍞 Bakehouse</a>
+            <a href="/" class="logo"><img src="/images/logo/bakehouse_logo.jpg" alt="Bakehouse"></a>
             <ul class="nav-links">
                 <li><a href="/">Home</a></li>
                 <li><a href="/products.html" class="active">Products</a></li>
                 <li><a href="/cart.html" class="cart-link">Cart <span id="cart-count" class="badge">0</span></a></li>
+                <li id="auth-nav"></li>
             </ul>
         </nav>
     </header>
@@ -21,24 +22,8 @@
     <main>
         <section class="section">
             <div class="container">
-                <h1 class="page-title">Our Products</h1>
-
-                <!-- Filters -->
-                <div class="filters">
-                    <div class="filter-group">
-                        <label for="category-filter">Category:</label>
-                        <select id="category-filter">
-                            <option value="">All Categories</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="search-input">Search:</label>
-                        <input type="text" id="search-input" placeholder="Search products...">
-                    </div>
-                </div>
-
-                <div id="products-list" class="product-grid">
-                    <!-- Filled by JS -->
+                <div id="product-showcase" class="product-showcase">
+                    <p style="color: var(--color-text-light);">Loading…</p>
                 </div>
             </div>
         </section>
@@ -51,6 +36,7 @@
     </footer>
 
     <script src="/js/cart.js"></script>
+    <script src="/js/auth-nav.js"></script>
     <script src="/js/products.js"></script>
 </body>
 </html>

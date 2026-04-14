@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout — Bakehouse</title>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
     <header>
         <nav class="navbar">
-            <a href="/" class="logo">🍞 Bakehouse</a>
+            <a href="/" class="logo"><img src="/images/logo/bakehouse_logo.jpg" alt="Bakehouse"></a>
             <ul class="nav-links">
                 <li><a href="/">Home</a></li>
                 <li><a href="/products.html">Products</a></li>
                 <li><a href="/cart.html" class="cart-link">Cart <span id="cart-count" class="badge">0</span></a></li>
+                <li id="auth-nav"></li>
             </ul>
         </nav>
     </header>
@@ -24,50 +26,153 @@
                 <h1 class="page-title">Checkout</h1>
 
                 <div id="checkout-form-wrapper">
+                    <!-- Step indicators -->
+                    <div class="checkout-steps">
+                        <div class="step active" id="step-ind-1"><span class="step-num">1</span> Shipping</div>
+                        <div class="step-line"></div>
+                        <div class="step" id="step-ind-2"><span class="step-num">2</span> Payment</div>
+                        <div class="step-line"></div>
+                        <div class="step" id="step-ind-3"><span class="step-num">3</span> Review</div>
+                    </div>
+
                     <form id="checkout-form" class="checkout-form" novalidate>
-                        <h2>Shipping Information</h2>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="customer_name">Full Name *</label>
-                                <input type="text" id="customer_name" name="customer_name" required>
+                        <!-- Step 1: Shipping -->
+                        <div class="checkout-step" id="step-shipping">
+                            <h2>Shipping Information</h2>
+                            <div id="use-profile-wrapper" class="form-group" style="display:none;">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="use-profile-info">
+                                    Use shipping info from my profile
+                                </label>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="customer_name">Full Name *</label>
+                                    <input type="text" id="customer_name" name="customer_name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="customer_email">Email *</label>
+                                    <input type="email" id="customer_email" name="customer_email" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="customer_phone">Phone</label>
+                                    <input type="tel" id="customer_phone" name="customer_phone">
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label for="customer_email">Email *</label>
-                                <input type="email" id="customer_email" name="customer_email" required>
+                                <label for="shipping_address">Address *</label>
+                                <input type="text" id="shipping_address" name="shipping_address" required placeholder="Street address, P.O. box">
                             </div>
+                            <div class="form-group">
+                                <label for="shipping_address2">Address Line 2</label>
+                                <input type="text" id="shipping_address2" name="shipping_address2" placeholder="Apt, suite, unit, floor (optional)">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="shipping_city">City *</label>
+                                    <input type="text" id="shipping_city" name="shipping_city" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="shipping_state">State *</label>
+                                    <select id="shipping_state" name="shipping_state" required>
+                                        <option value="">Select state</option>
+                                        <option value="NY">New York</option>
+                                        <option value="NJ">New Jersey</option>
+                                        <option value="CT">Connecticut</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="shipping_zip">ZIP Code *</label>
+                                    <input type="text" id="shipping_zip" name="shipping_zip" required>
+                                </div>
+                            </div>
+                            <div id="shipping-error" class="error-msg" style="display:none;"></div>
+                            <button type="button" id="btn-to-payment" class="btn btn-primary btn-lg" style="width:100%;margin-top:1rem;">
+                                Continue to Payment
+                            </button>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="customer_phone">Phone</label>
-                                <input type="tel" id="customer_phone" name="customer_phone">
+
+                        <!-- Step 2: Payment -->
+                        <div class="checkout-step" id="step-payment" style="display:none;">
+                            <h2>Payment Information</h2>
+                            <div class="payment-methods">
+                                <label class="payment-method selected" data-method="stripe">
+                                    <input type="radio" name="payment_method" value="stripe" checked>
+                                    <span class="pm-icon">💳</span> Credit / Debit Card
+                                </label>
+                                <label class="payment-method" data-method="paypal" id="paypal-method-option" style="display:none;">
+                                    <input type="radio" name="payment_method" value="paypal">
+                                    <span class="pm-icon">🅿️</span> PayPal
+                                </label>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="shipping_address">Address *</label>
-                            <input type="text" id="shipping_address" name="shipping_address" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="shipping_city">City *</label>
-                                <input type="text" id="shipping_city" name="shipping_city" required>
+
+                            <!-- Stripe Card -->
+                            <div id="stripe-card-section">
+                                <div class="form-group">
+                                    <label>Card Number *</label>
+                                    <div id="stripe-card-number" class="stripe-element"></div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Expiration *</label>
+                                        <div id="stripe-card-expiry" class="stripe-element"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>CVC *</label>
+                                        <div id="stripe-card-cvc" class="stripe-element"></div>
+                                    </div>
+                                </div>
+                                <div id="stripe-card-errors" class="field-error"></div>
                             </div>
-                            <div class="form-group">
-                                <label for="shipping_zip">ZIP Code *</label>
-                                <input type="text" id="shipping_zip" name="shipping_zip" required>
+
+                            <!-- PayPal -->
+                            <div id="paypal-section" style="display:none;">
+                                <p class="paypal-info">You'll be redirected to PayPal to complete payment after reviewing your order.</p>
+                            </div>
+
+                            <div id="payment-error" class="error-msg" style="display:none;"></div>
+                            <div class="checkout-nav">
+                                <button type="button" id="btn-back-shipping" class="btn btn-outline">Back</button>
+                                <button type="button" id="btn-to-review" class="btn btn-primary btn-lg" style="flex:1;">Review Order</button>
                             </div>
                         </div>
 
-                        <h2>Order Summary</h2>
-                        <div id="checkout-items"></div>
-                        <div class="cart-total">
-                            Total: <strong>$<span id="checkout-total">0.00</span></strong>
+                        <!-- Step 3: Review & Place Order -->
+                        <div class="checkout-step" id="step-review" style="display:none;">
+                            <h2>Review Your Order</h2>
+                            <div class="review-section">
+                                <h3>Shipping</h3>
+                                <div id="review-shipping"></div>
+                            </div>
+                            <div class="review-section">
+                                <h3>Payment</h3>
+                                <div id="review-payment"></div>
+                            </div>
+                            <div class="review-section">
+                                <h3>Items</h3>
+                                <div id="checkout-items"></div>
+                                <div class="cart-total">
+                                    Total: <strong>$<span id="checkout-total">0.00</span></strong>
+                                </div>
+                            </div>
+                            <div id="checkout-error" class="error-msg" style="display:none;"></div>
+
+                            <!-- Stripe: Place Order button -->
+                            <div id="stripe-place-order" class="checkout-nav">
+                                <button type="button" id="btn-back-payment" class="btn btn-outline">Back</button>
+                                <button type="submit" class="btn btn-primary btn-lg" style="flex:1;" id="btn-place-order">Place Order</button>
+                            </div>
+
+                            <!-- PayPal: button renders here -->
+                            <div id="paypal-place-order" style="display:none;">
+                                <div class="checkout-nav" style="margin-bottom:1rem;">
+                                    <button type="button" id="btn-back-payment-pp" class="btn btn-outline">Back</button>
+                                </div>
+                                <div id="paypal-button-container"></div>
+                            </div>
                         </div>
-
-                        <div id="checkout-error" class="error-msg" style="display:none;"></div>
-
-                        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;margin-top:1rem;">
-                            Place Order
-                        </button>
                     </form>
                 </div>
 
@@ -76,7 +181,34 @@
                     <h2>Thank You for Your Order!</h2>
                     <p>Your order <strong>#<span id="confirm-order-id"></span></strong> has been placed.</p>
                     <p>Total: <strong>$<span id="confirm-total"></span></strong></p>
-                    <a href="/products.html" class="btn btn-primary">Continue Shopping</a>
+
+                    <!-- Post-purchase account creation (shown only for guests) -->
+                    <div id="post-purchase-signup" style="display:none;">
+                        <div class="post-signup-card">
+                            <h3>💾 Save your info for next time?</h3>
+                            <p>Create an account to speed up future checkouts and track your orders.</p>
+                            <div id="post-signup-form-wrapper">
+                                <div id="post-signup-error" class="auth-error" style="display:none;"></div>
+                                <div class="form-group">
+                                    <label for="post-signup-password">Choose a Password</label>
+                                    <input type="password" id="post-signup-password" minlength="8" placeholder="At least 8 characters" class="post-signup-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="post-signup-confirm">Confirm Password</label>
+                                    <input type="password" id="post-signup-confirm" minlength="8" placeholder="Repeat your password" class="post-signup-input">
+                                </div>
+                                <button type="button" id="btn-post-signup" class="btn btn-primary" style="width:100%;">Create Account</button>
+                                <button type="button" id="btn-skip-signup" class="btn btn-outline" style="width:100%;margin-top:0.5rem;">No thanks</button>
+                            </div>
+                            <div id="post-signup-success" style="display:none; text-align:center;">
+                                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎉</div>
+                                <p><strong>Account created!</strong></p>
+                                <p style="color:var(--color-text-light); font-size:0.9rem;">Check the server terminal for your verification link.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="/products.html" class="btn btn-primary" style="margin-top:1.5rem;">Continue Shopping</a>
                 </div>
             </div>
         </section>
@@ -89,6 +221,7 @@
     </footer>
 
     <script src="/js/cart.js"></script>
+    <script src="/js/auth-nav.js"></script>
     <script src="/js/checkout.js"></script>
 </body>
 </html>
